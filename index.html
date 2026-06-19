@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>啥都没有</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            overflow: hidden; 
+            background: #000; 
+            font-family: 'Microsoft YaHei', sans-serif;
+            cursor: crosshair;
+        }
+        #canvas-container { 
+            width: 100vw; 
+            height: 100vh; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+        }
+        .ui-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .main-text {
+            font-size: 4rem;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 0 20px rgba(100, 200, 255, 0.5), 0 0 40px rgba(100, 200, 255, 0.3);
+            letter-spacing: 0.5em;
+            animation: breathe 4s ease-in-out infinite;
+            pointer-events: auto;
+            user-select: none;
+        }
+        @keyframes breathe {
+            0%, 100% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+        @keyframes fadePulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.7; }
+        }
+        @media (max-width: 768px) {
+            .main-text {
+                font-size: 2.2rem;
+                letter-spacing: 0.3em;
+            }
+        }
+    </style>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    <div class="ui-layer">
+        <div class="main-text">啥都没有</div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // 场景设置
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x000510, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 0, 30);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // 控制器
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.enableZoom = true;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.5;
+        controls.maxDistance = 60;
+        controls.minDistance = 10;
+
+        // 灯光
+        const ambientLight = new THREE.AmbientLight(0x111122, 2);
+        scene.add(ambientLight);
+
+        const pointLight1 = new THREE.PointLight(0x4488ff, 100, 100);
+        pointLight1.position.set(10, 10, 10);
+        scene.add(pointLight1);
+
+        const pointLight2 = new THREE.PointLight(0xff4488, 80, 100);
+        pointLight2.position.set(-10, -10, 10);
+        scene.add(pointLight2);
+
+        const pointLight3 = new THREE.PointLight(0x44ff88, 60, 100);
+        pointLight3.position.set(0, 10, -10);
+        scene.add(pointLight3);
+
+        // 粒子系统 - 虚空尘埃
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 8000;
+        const posArray = new Float32Array(particlesCount * 3);
+        const scaleArray = new Float32Array(particlesCount);
+        const speedArray = new Float32Array(particlesCount);
+
+        for(let i = 0; i < particlesCount; i++) {
+            posArray[i * 3] = (Math.random() - 0.5) * 100;
+            posArray[i * 3 + 1] = (Math.random() - 0.5) * 100;
+            posArray[i * 3 + 2] = (Math.random() - 0.5) * 100;
+            scaleArray[i] = Math.random();
+            speedArray[i] = Math.random() * 0.02 + 0.005;
+        }
+
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        particlesGeometry.setAttribute('aScale', new THREE.BufferAttribute(scaleArray, 1));
+        particlesGeometry.setAttribute('aSpeed', new THREE.BufferAttribute(speedArray, 1));
+
+        const particlesMaterial = new THREE.PointsMaterial({
+            size: 0.15,
+            color: 0x88ccff,
+            transparent: true,
+            opacity: 0.6,
+            blending: THREE.AdditiveBlending,
+            sizeAttenuation: true
+        });
+
+        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particlesMesh);
+
+        // 漂浮的几何体 - 虚无中的"存在"
+        const geometries = [];
+        const shapes = [
+            new THREE.IcosahedronGeometry(1, 0),
+            new THREE.OctahedronGeometry(1.2, 0),
+            new THREE.TetrahedronGeometry(1.5, 0),
+            new THREE.TorusGeometry(2, 0.3, 16, 100),
+            new THREE.SphereGeometry(1, 32, 32)
+        ];
+
+        const materials = [
+            new THREE.MeshPhysicalMaterial({
+                color: 0x112244,
+                transparent: true,
+                opacity: 0.3,
+                roughness: 0.1,
+                metalness: 0.9,
+                transmission: 0.5,
+                thickness: 1
+            }),
+            new THREE.MeshPhysicalMaterial({
+                color: 0x441122,
+                transparent: true,
+                opacity: 0.25,
+                roughness: 0.2,
+                metalness: 0.8,
+                transmission: 0.6
+            }),
+            new THREE.MeshPhysicalMaterial({
+                color: 0x224411,
+                transparent: true,
+                opacity: 0.2,
+                roughness: 0.15,
+                metalness: 0.95,
+                transmission: 0.7
+            })
+        ];
+
+        for(let i = 0; i < 15; i++) {
+            const geo = shapes[Math.floor(Math.random() * shapes.length)];
+            const mat = materials[Math.floor(Math.random() * materials.length)];
+            const mesh = new THREE.Mesh(geo, mat);
+
+            mesh.position.set(
+                (Math.random() - 0.5) * 40,
+                (Math.random() - 0.5) * 40,
+                (Math.random() - 0.5) * 40
+            );
+
+            mesh.rotation.set(
+                Math.random() * Math.PI,
+                Math.random() * Math.PI,
+                Math.random() * Math.PI
+            );
+
+            mesh.userData = {
+                rotSpeed: {
+                    x: (Math.random() - 0.5) * 0.01,
+                    y: (Math.random() - 0.5) * 0.01,
+                    z: (Math.random() - 0.5) * 0.01
+                },
+                floatSpeed: Math.random() * 0.005 + 0.002,
+                floatOffset: Math.random() * Math.PI * 2,
+                originalY: mesh.position.y
+            };
+
+            geometries.push(mesh);
+            scene.add(mesh);
+        }
+
+        // 连接线 - 虚无中的联系
+        const lineMaterial = new THREE.LineBasicMaterial({
+            color: 0x224466,
+            transparent: true,
+            opacity: 0.1
+        });
+
+        const lineGeometry = new THREE.BufferGeometry();
+        const linePositions = [];
+
+        for(let i = 0; i < geometries.length; i++) {
+            for(let j = i + 1; j < geometries.length; j++) {
+                if(Math.random() > 0.85) {
+                    linePositions.push(
+                        geometries[i].position.x, geometries[i].position.y, geometries[i].position.z,
+                        geometries[j].position.x, geometries[j].position.y, geometries[j].position.z
+                    );
+                }
+            }
+        }
+
+        lineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+        const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
+        scene.add(lines);
+
+        // 鼠标交互
+        const mouse = new THREE.Vector2();
+        const targetRotation = new THREE.Vector2();
+
+        document.addEventListener('mousemove', (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            targetRotation.x = mouse.y * 0.5;
+            targetRotation.y = mouse.x * 0.5;
+        });
+
+        // 点击爆发效果
+        const burstParticles = [];
+
+        document.addEventListener('click', (event) => {
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+
+            const burstCount = 100;
+            const burstGeo = new THREE.BufferGeometry();
+            const burstPos = new Float32Array(burstCount * 3);
+            const burstVel = [];
+
+            const origin = new THREE.Vector3(
+                (Math.random() - 0.5) * 20,
+                (Math.random() - 0.5) * 20,
+                (Math.random() - 0.5) * 20
+            );
+
+            for(let i = 0; i < burstCount; i++) {
+                burstPos[i*3] = origin.x;
+                burstPos[i*3+1] = origin.y;
+                burstPos[i*3+2] = origin.z;
+
+                burstVel.push({
+                    x: (Math.random() - 0.5) * 0.5,
+                    y: (Math.random() - 0.5) * 0.5,
+                    z: (Math.random() - 0.5) * 0.5
+                });
+            }
+
+            burstGeo.setAttribute('position', new THREE.BufferAttribute(burstPos, 3));
+
+            const burstMat = new THREE.PointsMaterial({
+                size: 0.3,
+                color: new THREE.Color().setHSL(Math.random(), 0.8, 0.6),
+                transparent: true,
+                opacity: 1,
+                blending: THREE.AdditiveBlending
+            });
+
+            const burst = new THREE.Points(burstGeo, burstMat);
+            burst.userData = { velocities: burstVel, age: 0 };
+            scene.add(burst);
+            burstParticles.push(burst);
+        });
+
+        // 窗口调整
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // 动画循环
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+            const delta = clock.getDelta();
+
+            // 粒子动画
+            const positions = particlesGeometry.attributes.position.array;
+            for(let i = 0; i < particlesCount; i++) {
+                positions[i * 3 + 1] += speedArray[i] * Math.sin(time * 0.5 + i);
+                positions[i * 3] += speedArray[i] * 0.5 * Math.cos(time * 0.3 + i);
+
+                if(positions[i * 3 + 1] > 50) positions[i * 3 + 1] = -50;
+                if(positions[i * 3 + 1] < -50) positions[i * 3 + 1] = 50;
+            }
+            particlesGeometry.attributes.position.needsUpdate = true;
+            particlesMesh.rotation.y = time * 0.05;
+
+            // 几何体动画
+            geometries.forEach((mesh, i) => {
+                mesh.rotation.x += mesh.userData.rotSpeed.x;
+                mesh.rotation.y += mesh.userData.rotSpeed.y;
+                mesh.rotation.z += mesh.userData.rotSpeed.z;
+
+                mesh.position.y = mesh.userData.originalY + 
+                    Math.sin(time * mesh.userData.floatSpeed + mesh.userData.floatOffset) * 3;
+
+                mesh.material.opacity = 0.15 + Math.sin(time * 0.5 + i) * 0.1;
+            });
+
+            // 爆发粒子动画
+            for(let i = burstParticles.length - 1; i >= 0; i--) {
+                const burst = burstParticles[i];
+                const burstPos = burst.geometry.attributes.position.array;
+                const velocities = burst.userData.velocities;
+
+                burst.userData.age += 1;
+                burst.material.opacity = 1 - (burst.userData.age / 120);
+
+                for(let j = 0; j < velocities.length; j++) {
+                    burstPos[j*3] += velocities[j].x;
+                    burstPos[j*3+1] += velocities[j].y;
+                    burstPos[j*3+2] += velocities[j].z;
+                    velocities[j].x *= 0.98;
+                    velocities[j].y *= 0.98;
+                    velocities[j].z *= 0.98;
+                }
+
+                burst.geometry.attributes.position.needsUpdate = true;
+
+                if(burst.userData.age > 120) {
+                    scene.remove(burst);
+                    burst.geometry.dispose();
+                    burst.material.dispose();
+                    burstParticles.splice(i, 1);
+                }
+            }
+
+            // 灯光动画
+            pointLight1.position.x = Math.sin(time * 0.7) * 15;
+            pointLight1.position.z = Math.cos(time * 0.7) * 15;
+            pointLight2.position.x = Math.sin(time * 0.5 + 2) * 12;
+            pointLight2.position.y = Math.cos(time * 0.5 + 2) * 12;
+
+            // 平滑相机旋转
+            camera.rotation.x += (targetRotation.x - camera.rotation.x) * 0.02;
+            camera.rotation.y += (targetRotation.y - camera.rotation.y) * 0.02;
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
